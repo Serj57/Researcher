@@ -67,8 +67,8 @@ Researcher поддерживает CLI.
 usage: Researcher [-h] {analize,pcap} ...
 
 positional arguments:
-  {analize,pcap}
-    analize       Параметры анализа pcap(ng) файлов.  
+  {analyze,pcap}
+    analyze       Параметры анализа pcap(ng) файлов.  
     pcap          Параметры обработки pcap(ng) файлов.
 
 options:
