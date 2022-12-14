@@ -57,7 +57,7 @@ class PositionalMethod(IMethod):
 
     def _format(self):
         pt = PrettyTable()
-        pt.field_names = ['pos', 'open %', 'items']
+        pt.field_names = ['pos', 'open%', 'items']
         pt.border = False
         pt.align = 'l'
         data = list(filter(lambda item: item[0][0] < self._positions + 1, self._result.items()))
@@ -66,8 +66,9 @@ class PositionalMethod(IMethod):
             if not group:
                 break
             group.sort(key=lambda item: (item[0][0], -item[1]))
+            total_byte = sum([item[1] for item in group])
             items = [(item[0][1], item[1]) for item in group[:self._per_position]]
-            str_items = ' '.join([f"('{item[0]}', {item[1]})" for item in items])
+            str_items = ' '.join([f"('{item[0]}', {item[1]}, {round(item[1]/total_byte*100, 1)}%)" for item in items])
             pt.add_row([position, round(len(items)/len(group)*100, 1), str_items])
         del data
         return pt
