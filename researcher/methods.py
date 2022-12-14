@@ -89,8 +89,7 @@ class PacketPositionalMethod(IMethod):
         for num in range(1, self._count + 1):
             req = f"""
                 SELECT pkt_num, data
-                FROM ( SELECT ROW_NUMBER() OVER (PARTITION BY stream ORDER BY packet) pkt_num,
-                                data
+                FROM ( SELECT ROW_NUMBER() OVER (PARTITION BY stream ORDER BY packet) pkt_num, data
                         FROM {self._table}) AS rank
                 WHERE pkt_num = {num};
             """
@@ -108,13 +107,13 @@ class PacketPositionalMethod(IMethod):
         pool = Pool(4)
         for chunk in self._slice_streams():
             bucket = pool.map(self._do_job, chunk)
-            for slice in bucket:
-                self._result.update(slice)
+            for packet in bucket:
+                self._result.update(packet)
         return self._format()
     
     def _format(self):
         pt = PrettyTable()
-        pt.field_names = ['pkt', 'pos', 'open %', 'items']
+        pt.field_names = ['pkt', 'pos', 'open%', 'items']
         pt.border = False
         pt.align = 'l'
         data = list(filter(lambda item: item[0][1] < self._positions + 1, self._result.items()))
@@ -123,9 +122,10 @@ class PacketPositionalMethod(IMethod):
                 group = list(filter(lambda item: item[0][0] == pkt and item[0][1] == position, data))
                 if not group:
                     break
+                total_byte = sum([item[1] for item in group])
                 group.sort(key=lambda item: (item[0][0], item[0][1], -item[1]))
                 items = [(item[0][2], item[1]) for item in group[:self._per_position]]
-                str_items = ' '.join([f"('{item[0]}', {item[1]})" for item in items])
+                str_items = ' '.join([f"('{item[0]}', {item[1]}, {round(item[1]/total_byte*100, 1)}%)" for item in items])
                 pt.add_row([pkt, position, round(len(items)/len(group)*100, 1), str_items])
         del data
         return pt
