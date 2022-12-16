@@ -1,7 +1,9 @@
-import subprocess
+import os
 import sqlite3
-from .config import DATABASE
+import subprocess
 from .config import TABLE
+from .config import DATABASE
+
 
 class TsharkParser:
     def __init__(self):
@@ -24,6 +26,8 @@ class TsharkParser:
         
         conn.execute(f"DELETE FROM {self._table} WHERE data = '';")
         conn.commit()
+
+        os.remove(self._output)
 
     def parse(self, proto:str, pcap:str):
         self._run_tshark(proto, pcap)
