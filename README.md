@@ -1,16 +1,54 @@
 # Byte researcher
 
-Скрипт по исследованию payload'ов в TCP/UDP из .pcap(ng) дампов.
-Производит два типа анализа: позиционный и пакетно-позиционный.
+This is a frequency analysis tool for TCP/UDP payloads from .pcap(ng) dumps.
+It supports two types of analysis: positional and package-positional.
 
-Результаты выполнения скрипта следует использовать для более точного написания RegExp выражений. 
+Executing script results can help when writing RegExp expressions to filter traffic.
 
-## Позиционный метод
-Суть метода заключается в частотном анализе байт paylod'ов, находящихся на одной позиции. В данном методе порядок paylod'ов не важен.
+>Tip: results of the analysis directly depend on the quality of the dump, so it is advisable to consider traffic in only one direction.
+
+**Tshark** is used to parse dumps and **SQLite** is used to store information.
+
+
+The tool has a command-line interface. Use `-h` to get a list of arguments.
+```bash
+usage: researcher.py [-h] {analyze,pcap} ...
+
+positional arguments:
+  {analyze,pcap}
+    analyze       Options for analyze .pcap(ng) files. More info -h.
+    pcap          Options for parse .pcap(ng) files. More info -h.  
+
+options:
+  -h, --help      show this help message and exit 
+```
+
+Dump processing is performed in two steps: parsing and applying analysis methods.
+
+You can control the amount of information displayed through the parameters:
+
+- `range` - the number of positions in the payload;
+- `length` - number of displayed variants per position;
+- `count` - number of packets (relevant for the batch-positional method).
+
+Sample output for a packet-positional method:
+
+| pkt | pos | open% | items |
+| ----- | ----- | ----- | ----- |
+| 1 | 1 | 7.8 | ('26', 106, 1.1%) ('78', 99, 1.0%) ('22', 95, 0.9%) ... |
+| 1 | 2 | 100 | ('00', 13890, 95.7%) ('01', 272, 1.8%) ('08', 180, 1.2%) ('3f', 158, 1.0%) |
+
+The `open%` column shows the percentage of `items` displayed on the screen. `Item` contains a byte, its frequency, and its percentage of the total.
+
+# Analysis Methods
+
+## Positional method
+
+This method analyzes all dump packets at once. It is based on frequency analysis of paylod bytes that have the same position index.
 
 ![pos method pic](https://github.com/Serj57/Researcher/blob/main/blob/pos_method.png)
 
-В результате: 
+Result:
 
 | position | items |
 | ----- | ----- |
@@ -20,16 +58,15 @@
 | 4 | ('a0', 1) ('4b', 1) ('c7', 1) ('09', 1) |
 
 
-## Пакетно-позиционный метод
-В пакетно-позиционном методе мы сначала разделяем пакеты по потокам, основанным на [5-Tuple](https://www.ietf.org/rfc/rfc6146.txt).
+## Packet-positional method
+
+In the packet-positional method, packets are first split into streams based on [5-Tuple](https://www.ietf.org/rfc/rfc6146.txt).
+
+The example below shows that packets #1 and #3 are from stream #1 (yellow), and #2 and #4 are from stream #2 (green). Then the first packets are taken from each stream. In the example, these are #1 and #2. For them, the positional method is used. Next, the second packets of streams are taken (No. 3 and No. 4) and the positional method is applied again, etc.
 
 ![pkt-pos method pic](https://github.com/Serj57/Researcher/blob/main/blob/pkt_pos_method.png)
 
-Пусть пакеты с номерами 1 и 3 относятся к 1-му потоку, а 2 и 4 ко 2-му потоку.
-
-Затем из каждого потока берутся первые пакеты. В нашем случае это 1-й и 2-й. Относительно их применяется позиционный метод. Следующими берутся вторые пакеты потоков (3-й и 4-й) и снова применяется позиционный метод.
-
-В результате:
+Result:
 
 | packet | position | items |
 | ----- | ----- | ----- |
@@ -42,58 +79,16 @@
 | 2 | 3 | ('01', 1) ('ed', 1)|
 | 2 | 4 | ('c7', 1) ('09', 1)|
 
-## Установка
-Для работы `researcher'a` необходим **tshark** и утилита командной строки для **sqlite3**.
+# Deploy
 
+First of all, you need to install Tshark. Detailed instructions are available on the [website](https://tshark.dev/setup/install/).
 
-Tshark устанавливается совместно с Wireshark как на Linux (из репозитория), так и Windows (с [официального сайта](https://www.wireshark.org/)).
+Next, we need a bundle of command-line tools for managing SQLite database files. For Windows, you can download the bundle from the official [website](https://www.sqlite.org/2022/sqlite-tools-win32-x86-3390400.zip). For Linux bundle is available in the repository.
 
-Утилита командной строки sqlite3 для Windows доступна на официальном [сайте](https://www.sqlite.org/2022/sqlite-tools-win32-x86-3390400.zip). В Linux устанавливается из репозитория.
+If you're on Windows, don't forget to set the path to the .exe in your environment variables.
 
-
-На Windows нужно в переменные окружения добавить пути до .exe файлов tshark и sqlite3.
-
-Для форматирования вывода используется Python библиотека [prettytable](https://pypi.org/project/prettytable/).
-
-Для ее установки нужно выполнить:
-```bash
-pip install prettytable
-```
-
-## Использование
-Researcher поддерживает CLI.
-Для получения описания основных аргументов используйте `-h`.
-```bash
-usage: Researcher [-h] {analize,pcap} ...
-
-positional arguments:
-  {analyze,pcap}
-    analyze       Параметры анализа pcap(ng) файлов.  
-    pcap          Параметры обработки pcap(ng) файлов.
-
-options:
-  -h, --help      show this help message and exit
-```
-
-Подробное описание аргументов доступно через -h:
+Finally need to install Python packages from `requirements.txt`.
 
 ```bash
-python main.py <argument> -h
+pip install -r requirements.txt
 ```
-
-Обработка дампа выполняется поэтапно. Сначала его необходимо распарсить, а затем анализировать полученные данные.
-
-Количество пакетов в дампе может быть различным, а в потоках не все пакеты могут быть нужны для анализа. Вы можете управлять количеством отображаемоей информации через параметры:
-
-- `range` - число исследуемых позиций в payload'е;
-- `length` - число отображаемых вариантов на одну позицию;
-- `count` - число пакетов (актуально для пакетно-позиционного метода)
-
-Пример вывода для позиционного анализа
-
-| pos | open % | items |
-| ----- | ----- | ----- |
-| 1 | 100.0 | ('40', 13890) ('00', 215) ('01', 214) |
-| 2 | 77.8  | ('00', 13890) ('01', 272) ('08', 56) ('03', 36) ('04', 36) ('13', 12) ('16', 7) |
-
-Колонка `open` в процентах показывает количество отображенных элементов. Управляя параметрами, указанными выше, вы можете изменить область видимости.
