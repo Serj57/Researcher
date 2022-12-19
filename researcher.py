@@ -31,7 +31,7 @@ if __name__ == '__main__':
     subparser = base_parser.add_subparsers()
 
     ### analyze subparser ###
-    analyze_parser = subparser.add_parser('analyze', help='Options for analyze .pcap(ng) files.')
+    analyze_parser = subparser.add_parser('analyze', help='Options for analyze .pcap(ng) files. More info -h.')
 
     analyze_parser.add_argument('-m', '--method', required=True, choices=['pos', 'pkt'],  metavar='',
                             help='Method of analysis. Valid expressions: pos, pkt.')
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     analyze_parser.set_defaults(handler=analyze_handler)
 
     ### pcap subparcer ###
-    file_parser = subparser.add_parser('pcap', help='Options for parse .pcap(ng) files.')
+    file_parser = subparser.add_parser('pcap', help='Options for parse .pcap(ng) files. More info -h.')
     
     file_parser.add_argument('-p', '--proto', required=True, choices=['udp', 'tcp'], metavar='',
                             help='Transport layer protocol. Valid expressions: udp, tcp.')
