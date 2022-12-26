@@ -1,4 +1,5 @@
 import os
+import csv
 import sqlite3
 import subprocess
 from .config import TABLE
@@ -21,9 +22,11 @@ class TsharkParser:
         conn.execute(f"DELETE FROM {self._table};")
         conn.commit()
 
-        to_sql = f'sqlite3 {self._db} ".import {self._output} {self._table} --csv"'
-        subprocess.run(to_sql, stdout=subprocess.PIPE, shell=True)
+        with open(self._output, 'r', encoding='utf-8') as dump:
+            csv_reader = csv.reader(dump, delimiter=',')
+            rows = [(int(row[0]), int(row[1]), row[2]) for row in csv_reader]
         
+        conn.executemany(f'INSERT INTO {self._table} VALUES(?, ?, ?);', rows)
         conn.execute(f"DELETE FROM {self._table} WHERE data = '';")
         conn.commit()
 
