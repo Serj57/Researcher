@@ -83,8 +83,6 @@ Result:
 
 First of all, you need to install Tshark. Detailed instructions are available on the [website](https://tshark.dev/setup/install/).
 
-Next, we need a bundle of command-line tools for managing SQLite database files. For Windows, you can download the bundle from the official [website](https://www.sqlite.org/2022/sqlite-tools-win32-x86-3390400.zip). For Linux bundle is available in the repository.
-
 If you're on Windows, don't forget to set the path to the .exe in your environment variables.
 
 Finally need to install Python packages from `requirements.txt`.
